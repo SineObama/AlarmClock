@@ -13,7 +13,7 @@ from setuptools import find_packages, setup, Command
 
 # Package meta-data.
 NAMESPACE = 'sine'
-NAME = NAMESPACE + '.clock'
+NAME = NAMESPACE + '.alarmclock'
 DESCRIPTION = 'Windows command line alarm clock (python2)'
 URL = 'https://github.com/SineObama/AlarmClock'
 EMAIL = '714186139@qq.com'
@@ -117,7 +117,8 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy'
+        'Programming Language :: Python :: Implementation :: PyPy',
+        'Operating System :: Microsoft :: Windows'
     ],
     # $ setup.py publish support.
     cmdclass={
