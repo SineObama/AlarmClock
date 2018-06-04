@@ -19,7 +19,7 @@ URL = 'https://github.com/SineObama/AlarmClock'
 EMAIL = '714186139@qq.com'
 AUTHOR = 'Xian Zheng'
 REQUIRES_PYTHON = '>=2.7.0'
-VERSION = '0.5.2'
+VERSION = None
 
 # What packages are required for this module to be executed?
 REQUIRED = [

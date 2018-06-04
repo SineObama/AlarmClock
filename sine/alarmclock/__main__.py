@@ -73,7 +73,7 @@ class MainPage(Page):
             today = datetime.datetime.date(now)
             string = 'alarm clocks:\n'
             for i, clock in enumerate(data['clocks']):
-                if isToday and datetime.datetime.date(clock['time']) > today:
+                if isToday and (datetime.datetime.date(clock['time']) > today or not clock['on']):
                     isToday = False
                     string += '\n'
                 string += fmt(i+1, clock) + '\n'
