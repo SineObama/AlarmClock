@@ -20,7 +20,8 @@ def _init():
         with open(_data_filepath, 'a+') as file:
             for line in file:
                 data['clocks'].append(eval(line))
-            resortAndSave()
+        refreshWeekly()
+        resortAndSave()
     except Exception, e:
         print 'load data from file', _data_filepath, 'failed.', e
         import sys

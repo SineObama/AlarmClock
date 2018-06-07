@@ -35,15 +35,18 @@ def _init():
 
     import data
     from initUtil import warn
-    import sine.propertiesReader as reader
+    from sine.properties import loadSingle, LineReader
 
     # 读入beep样式信息
-    beep_filename = 'beep.conf'
+    beep_filename = 'beep.properties'
     default_pattern = [(600,50),(200,),(600,50),(300,)]
     lines = []
     try:
         data.useDefault(data.data['location'], beep_filename)
-        lines = reader.readAsList(beep_filename)
+        with open(beep_filename, 'r') as file:
+            for line in LineReader(file):
+                key, value = loadSingle(line)
+                lines.append(key + value)
     except Exception, e:
         warn('load beep pattern from file', beep_filename, 'failed, will use default value.', e)
         beep_pattern = default_pattern
@@ -51,7 +54,7 @@ def _init():
     try:
         if 'beep_pattern' not in locals():
             beep_pattern = []
-            for i, (s, unuse) in enumerate(lines):
+            for i, s in enumerate(lines):
                 array = s.split(',')
                 if len(array) > 1:
                     frequency = int(array[0].strip())
@@ -98,6 +101,7 @@ def play(name):
         return
     if _name != None: # 正在播则停止当前beep或者音乐
         _alarmThread.stop()
+        _alarmThread.join(1)
         winsound.PlaySound(None, winsound.SND_PURGE)
     if name != None:
         if name == _beep or not isLegal(name):

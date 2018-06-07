@@ -17,7 +17,7 @@ def _init():
             return False
         return True
 
-    import sine.propertiesReader as reader
+    from sine.properties import load, loadSingle, LineReader
     from sine.path import Path
     from initUtil import warn
 
@@ -25,12 +25,13 @@ def _init():
     data['location'] = location
 
     # 从文件读入全局配置，暂时保存为字符串
-    conf_filename = 'clock.conf'
+    conf_filename = 'clock.properties'
     allMiss = False
     config = {}
     try:
         useDefault(location, conf_filename)
-        config = reader.readAsDict(conf_filename)
+        with open(conf_filename, 'r') as file:
+            config = load(file)
     except Exception, e:
         warn('load config from file', conf_filename, 'failed, will use default value.', e)
         allMiss = True
@@ -69,12 +70,14 @@ def _init():
     data['config'] = config
 
     # 读入日期和时间格式配置
-    format_filename = 'time.conf'
+    format_filename = 'time.properties'
     try:
         useDefault(location, format_filename)
-        config = reader.readAsList(format_filename)
-        for i, (k, v) in enumerate(config):
-            config[i] = (k, v.split(','))
+        config = []
+        with open(format_filename, 'r') as file:
+            for line in LineReader(file):
+                key, value = loadSingle(line)
+                config.append((key, value.split(',')))
     except Exception, e:
         warn('load time format from file', format_filename, 'failed, will use default value.', e)
         config = [(   '%M'   ,        ['minute', 'second', 'microsecond']),
@@ -85,12 +88,14 @@ def _init():
                   ('%H:%M:%S',['hour', 'minute', 'second', 'microsecond'])]
     data['timeFormats'] = config
 
-    format_filename = 'date.conf'
+    format_filename = 'date.properties'
     try:
         useDefault(location, format_filename)
-        config = reader.readAsList(format_filename)
-        for i, (k, v) in enumerate(config):
-            config[i] = (k, v.split(','))
+        config = []
+        with open(format_filename, 'r') as file:
+            for line in LineReader(file):
+                key, value = loadSingle(line)
+                config.append((key, value.split(',')))
     except Exception, e:
         warn('load date format from file', format_filename, 'failed, will use default value.', e)
         config = [(     '/%d',                 ['day']),

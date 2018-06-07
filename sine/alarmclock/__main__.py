@@ -273,5 +273,4 @@ try:
         if len(stack) == 0:
             break
 finally:
-    player.play(None)
     listenThread.stop()

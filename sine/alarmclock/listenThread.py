@@ -16,7 +16,7 @@ on = lambda:None
 off = lambda:None
 refresh = lambda:None # 刷新周期重复闹钟
 
-def _alarm(stop_event):
+def _listen(stop_event):
     import manager
     from mydatetime import getNow
     import player
@@ -39,56 +39,50 @@ def _alarm(stop_event):
         player.play(reminds[0]['sound'] if length else None)
         if not alarm and length:
             alarm = True
-            _taskbarThread.start()
+            flash(3, alarmLast, 500)
             _screenThread.start()
             on()
             count = 0
         if alarm and not len(reminds):
             alarm = False
             player.play(None)
-            _taskbarThread.stop()
+            stopFlash()
             _screenThread.stop()
             off()
         if alarm and count > 10 * alarmLast:
             alarm = False
             player.play(None)
-            _taskbarThread.stop()
             _screenThread.stop()
             manager.later(getNow() + alarmInterval) # 推迟提醒
             off()
         count += 1
         time.sleep(0.1)
+    player.play(None)
+    stopFlash()
     return
 
 from sine.threads import ReStartableThread as _ReStartableThread
 
-_alarmThread = _ReStartableThread(target=_alarm)
+_listenThread = _ReStartableThread(target=_listen)
 
 def start():
-    _alarmThread.start()
+    _listenThread.start()
 
 def stop():
-    _alarmThread.stop()
+    _listenThread.stop()
+    _listenThread.join(1)
 
-def _taskbar(stop_event):
-    import time
-    while 1:
-        if stop_event.is_set():
-            break
-        _flash()
-        time.sleep(1)
-    return
+def flash(*args):
+    pass
+
+def stopFlash():
+    pass
 
 try:
     if config['taskbar_flash']:
-        from sine.flashWindow import flash as _flash
-        _taskbarThread = _ReStartableThread(target=_taskbar)
+        from sine.flashWindow import flash, stopFlash
 except ImportError, e:
     warn('taskbar flashing not supported.', e)
-finally:
-    if '_taskbarThread' not in locals():
-        _taskbarThread = _ReStartableThread(target=None)
-
 
 tokens = config['screen_flash_mode']
 

@@ -92,7 +92,6 @@ class WeeklyClock(AlarmClock):
         if not self.has_key('weekdays'):
             raise ClockException('internal error, no weekdays')
         self.editWeekdays(self['weekdays'])
-        self.refresh()
 
     def refresh(self):
         '''更新过期闹钟'''
