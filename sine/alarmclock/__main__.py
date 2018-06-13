@@ -268,7 +268,7 @@ try:
     append(MainPage())
     listenThread.start()
     while (1):
-        order = raw_input()
+        order = raw_input().lower()
         stack[-1].do(order)
         if len(stack) == 0:
             break
