@@ -1,39 +1,45 @@
 # coding=utf-8
 '''
 监听线程。检查闹钟状态并进行屏幕闪烁和播放铃声。
-需要设置提醒延迟remindDelay(datetime.timedelta)，启动回调on和关闭回调off。
+需要设置回调函数：响铃启动on、关闭off、刷新列表refresh。
 提供start和stop接口，可重复启动。
 '''
 
+import datetime
+import time
+import manager
 from data import data
 from initUtil import warn
-import datetime
+from mydatetime import getNow
 config = data['config']
 
 alarmLast = config['alarm_last']
 alarmInterval = datetime.timedelta(0, config['alarm_interval'])
 on = lambda:None
 off = lambda:None
-refresh = lambda:None # 刷新周期重复闹钟
+refresh = lambda:None # 刷新闹钟列表
 
 def _listen(stop_event):
-    import manager
-    from mydatetime import getNow
     import player
-    import time
-    prev = getNow()
-    minGap = datetime.timedelta(0, 300) # 超过300秒，认为是睡眠/待机唤醒
     count = 0
     alarm = False # “闹铃”提醒状态
+
+    prev = getNow()
+    minGap = datetime.timedelta(0, 300) # 超过300秒，认为是睡眠/待机唤醒
     while 1:
         if stop_event.is_set():
             break
+
+        # 检查睡眠唤醒和跨越凌晨
         cur = getNow()
-        if (cur - prev >= minGap):
+        if cur - prev >= minGap:
             manager.refreshWeekly()
             manager.resortAndSave()
             refresh()
+        elif datetime.datetime.date(cur) != datetime.datetime.date(prev):
+            refresh()
         prev = cur
+
         reminds = manager.getReminds() # 获取需要闹铃提醒的闹钟
         length = len(reminds)
         player.play(reminds[0]['sound'] if length else None)
@@ -61,9 +67,9 @@ def _listen(stop_event):
     stopFlash()
     return
 
-from sine.threads import ReStartableThread as _ReStartableThread
+from sine.threads import ReStartableThread
 
-_listenThread = _ReStartableThread(target=_listen)
+_listenThread = ReStartableThread(target=_listen)
 
 def start():
     _listenThread.start()
@@ -84,14 +90,11 @@ try:
 except ImportError, e:
     warn('taskbar flashing not supported.', e)
 
-tokens = config['screen_flash_mode']
-
 def _screen(stop_event):
     import os
-    import manager
-    import time
     import formatter
     fmt = formatter.create(config, config['flash_format'])
+    tokens = config['screen_flash_mode']
     sleep_len = 1.0 / len(tokens)
     pos = 0
     last = '2'
@@ -115,4 +118,4 @@ def _screen(stop_event):
         time.sleep(sleep_len)
     return
 
-_screenThread = _ReStartableThread(target=_screen)
+_screenThread = ReStartableThread(target=_screen)
