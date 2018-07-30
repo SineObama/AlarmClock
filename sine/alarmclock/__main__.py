@@ -135,6 +135,8 @@ class MainPage(Page):
                 pass
             if char == 'w':
                 weekdays, msg = parseString(remain2)
+                if target <= now:
+                    target = getNextFromWeekday(now, target, weekdays)
                 manager.add(WeeklyClock({'time':target,'weekdays':weekdays,'msg':msg}))
                 return 1
             if char == 'r':
