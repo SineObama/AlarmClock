@@ -106,6 +106,8 @@ class MainPage(Page):
             if order.startswith('w'):
                 index, remain = parseInt(order[1:])
                 target, unused = parseDateTime(remain, now)
+                if target <= now:
+                    target = getNextFromWeekday(now, target, everyday)
                 manager.get(index).editTime(target)
                 return 1
             # cancel alarm
@@ -195,6 +197,8 @@ class EditPage(Page):
             # edit time
             if order.startswith('w'):
                 target, unused = parseDateTime(order[1:], getNow())
+                if target <= now:
+                    target = getNextFromWeekday(now, target, everyday)
                 clock.editTime(target)
                 return 1
             # edit remind ahead
