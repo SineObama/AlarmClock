@@ -6,7 +6,7 @@
 import os.path as spath
 import shutil
 
-data = {}
+data = {'quiet':False}
 
 # 加载配置并检查。对于缺少的配置赋予默认值并暂停警告
 

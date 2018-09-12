@@ -40,9 +40,12 @@ def _listen(stop_event):
             refresh()
         prev = cur
 
-        reminds = manager.getReminds() # 获取需要闹铃提醒的闹钟
+        # 获取需要闹铃提醒的闹钟
+        reminds = manager.getReminds()
         length = len(reminds)
         player.play(reminds[0]['sound'] if length else None)
+        
+        # 响铃状态切换
         if not alarm and length:
             alarm = True
             flash(3, alarmLast, 500)
@@ -86,7 +89,7 @@ def stopFlash():
 
 try:
     if config['taskbar_flash']:
-        from sine.flashWindow import flash, stopFlash
+        from winUtil import flash, stopFlash
 except ImportError, e:
     warn('taskbar flashing not supported.', e)
 

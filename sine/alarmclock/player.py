@@ -18,6 +18,7 @@ play(None)停止
 import winsound
 from sine.threads import ReStartableThread
 from exception import ClientException
+import data
 
 _list = []
 
@@ -33,7 +34,6 @@ def _init():
             time.sleep(last)
         return __func_sleep
 
-    import data
     from initUtil import warn
     from sine.properties import loadSingle, LineReader
 
@@ -97,6 +97,8 @@ _alarmThread = ReStartableThread(target=_alarm)
 
 def play(name):
     global _name
+    if data.data['quiet']:
+        name = None
     if _name == name or name == '':
         return
     if _name != None: # 正在播则停止当前beep或者音乐

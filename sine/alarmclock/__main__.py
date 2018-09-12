@@ -5,9 +5,12 @@ import sys
 import datetime
 import os
 import threading
+import atexit
 # library依赖
 from plone.synchronize import synchronized
+from sine.threads import ReStartableThread
 # 本地依赖
+import trayIcon
 from parsing import *
 from mydatetime import *
 from entity import *
@@ -265,18 +268,38 @@ listenThread.on = lambda :append(AlarmPage())
 listenThread.off = pop
 listenThread.refresh = lambda :stack[-1].reprint()
 
+quitEvent = threading.Event()
+trayIcon.quitEvent = quitEvent
 
-try:
-    # 模块初始化
-    import manager
-    if data['config']['warning_pause']:
-        initUtil.warning_pause()
-    append(MainPage())
-    listenThread.start()
-    while (1):
-        order = raw_input().lower()
-        stack[-1].do(order)
-        if len(stack) == 0:
-            break
-finally:
+# 模块初始化
+import manager
+
+def main(stop_event):
+    try:
+        if data['config']['warning_pause']:
+            initUtil.warning_pause()
+        append(MainPage())
+        trayIcon.create()
+        listenThread.start()
+        while (1):
+            order = raw_input().lower()
+            stack[-1].do(order)
+            if len(stack) == 0:
+                break
+    finally:
+        quitEvent.set()
+
+def onExit():
+    try:
+        trayIcon.delete()
+    except Exception as e:
+        pass
     listenThread.stop()
+
+atexit.register(onExit)
+
+inputLoop = ReStartableThread(target=main)
+inputLoop.start()
+
+quitEvent.wait()
+

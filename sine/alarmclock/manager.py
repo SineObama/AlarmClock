@@ -7,6 +7,8 @@ from exception import ClockException
 from entity import *
 from data import data
 
+change_callback = None # 闹钟变化回调
+
 _data_filepath = data['config']['datafile']
 _sort = lambda x:(x['time'] if x['on'] else datetime.datetime.max)
 _clock_lock = threading.RLock()
@@ -46,6 +48,13 @@ def getReminds():
         if clock.checkRemind(now):
             reminds.append(clock)
     return reminds
+
+def getExpired():
+    expired = []
+    for clock in data['clocks']:
+        if clock.isExpired():
+            expired.append(clock)
+    return expired
 
 @synchronized(_clock_lock)
 def add(clock):
@@ -157,6 +166,8 @@ def later(time):
 @synchronized(_clock_lock)
 def resortAndSave():
     data['clocks'].sort(key=_sort)
+    if callable(change_callback):
+        change_callback()
     with open(_data_filepath, 'w') as file:
         for clock in data['clocks']:
             file.write(repr(clock))

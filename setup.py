@@ -25,9 +25,8 @@ VERSION = None
 # What packages are required for this module to be executed?
 REQUIRED = [
     'plone.synchronize',
-    'sine.threads',
+    'sine.threads>=0.1.5',
     'sine.path',
-    'sine.flashWindow>=0.2.0',
     'sine.properties',
 ]
 
