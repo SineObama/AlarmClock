@@ -21,3 +21,7 @@ def warning_pause():
     if _warning:
         print '\npress enter to continue'
         raw_input()
+
+def invalid(*args, **kwargs):
+    '''无效函数。用于赋值给不支持的操作'''
+    pass

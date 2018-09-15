@@ -29,8 +29,9 @@ class SysTrayIcon(object):
     def __init__(self,
                  icon,
                  hover_text,
-                 menu_options,
+                 static_options,
                  left_click_callback=None,
+                 addition_menu_callback=None,
                  on_quit=None,
                  default_menu_index=None,
                  window_class_name=None,):
@@ -39,13 +40,12 @@ class SysTrayIcon(object):
         self.hover_text = hover_text
         self.on_quit = on_quit
         self.LCC = left_click_callback
+        self.AMC = addition_menu_callback
         
-        menu_options = menu_options + (('Quit', None, self.QUIT),)
+        static_options = static_options + (('Quit', None, self.QUIT),)
         self._next_action_id = self.FIRST_ID
-        self.menu_actions_by_id = set()
-        self.menu_options = self._add_ids_to_menu_options(list(menu_options))
-        self.menu_actions_by_id = dict(self.menu_actions_by_id)
-        del self._next_action_id
+        self.static_actions = dict()
+        self.static_options = self._add_ids_to_menu_options(list(static_options), self.static_actions)
         
         
         self.default_menu_index = (default_menu_index or 0)
@@ -81,17 +81,17 @@ class SysTrayIcon(object):
         self.notify_id = None
         self.refresh_icon()
 
-    def _add_ids_to_menu_options(self, menu_options):
+    def _add_ids_to_menu_options(self, menu_options, menu_actions_by_id):
         result = []
         for menu_option in menu_options:
             option_text, option_icon, option_action = menu_option
             if callable(option_action) or option_action in self.SPECIAL_ACTIONS:
-                self.menu_actions_by_id.add((self._next_action_id, option_action))
+                menu_actions_by_id[self._next_action_id] = option_action
                 result.append(menu_option + (self._next_action_id,))
             elif non_string_iterable(option_action):
                 result.append((option_text,
                                option_icon,
-                               self._add_ids_to_menu_options(option_action),
+                               self._add_ids_to_menu_options(option_action, menu_actions_by_id),
                                self._next_action_id))
             else:
                 print 'Unknown item', option_text, option_icon, option_action
@@ -155,7 +155,14 @@ class SysTrayIcon(object):
         
     def show_menu(self):
         menu = win32gui.CreatePopupMenu()
-        self.create_menu(menu, self.menu_options)
+        dynamic_actions = dict()
+        dynamic_options = []
+        if self.AMC:
+            dynamic_options = self._add_ids_to_menu_options(list(self.AMC()), dynamic_actions)
+        self.all_actions = {}
+        self.all_actions.update(self.static_actions)
+        self.all_actions.update(dynamic_actions)
+        self.create_menu(menu, dynamic_options + self.static_options)
         #win32gui.SetMenuDefaultItem(menu, 1000, 0)
         
         pos = win32gui.GetCursorPos()
@@ -175,7 +182,7 @@ class SysTrayIcon(object):
             if option_icon:
                 option_icon = self.prep_menu_icon(option_icon)
             
-            if option_id in self.menu_actions_by_id:                
+            if option_id in self.all_actions:                
                 item, extras = win32gui_struct.PackMENUITEMINFO(text=option_text,
                                                                 hbmpItem=option_icon,
                                                                 wID=option_id)
@@ -216,7 +223,7 @@ class SysTrayIcon(object):
         self.execute_menu_option(id)
         
     def execute_menu_option(self, id):
-        menu_action = self.menu_actions_by_id[id]      
+        menu_action = self.all_actions[id]      
         if menu_action == self.QUIT:
             win32gui.DestroyWindow(self.hwnd)
         else:

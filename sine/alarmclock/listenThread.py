@@ -9,7 +9,7 @@ import datetime
 import time
 import manager
 from data import data
-from initUtil import warn
+from initUtil import warn, invalid
 from mydatetime import getNow
 config = data['config']
 
@@ -81,17 +81,12 @@ def stop():
     _listenThread.stop()
     _listenThread.join(1)
 
-def flash(*args):
-    pass
-
-def stopFlash():
-    pass
-
 try:
     if config['taskbar_flash']:
         from winUtil import flash, stopFlash
 except ImportError, e:
     warn('taskbar flashing not supported.', e)
+    flash = stopFlash = invalid
 
 def _screen(stop_event):
     import os

@@ -10,7 +10,6 @@ import atexit
 from plone.synchronize import synchronized
 from sine.threads import ReStartableThread
 # 本地依赖
-import trayIcon
 from parsing import *
 from mydatetime import *
 from entity import *
@@ -269,7 +268,15 @@ listenThread.off = pop
 listenThread.refresh = lambda :stack[-1].reprint()
 
 quitEvent = threading.Event()
-trayIcon.quitEvent = quitEvent
+
+try:
+    from trayIcon import setQuitEvent, setRefresh, createIcon, deleteIcon
+    setQuitEvent(quitEvent)
+    setRefresh(lambda :stack[-1].reprint())
+except Exception as e:
+    initUtil.warn('tray icon is not supported.', e)
+    createIcon = deleteIcon = initUtil.invalid
+
 
 # 模块初始化
 import manager
@@ -279,7 +286,7 @@ def main(stop_event):
         if data['config']['warning_pause']:
             initUtil.warning_pause()
         append(MainPage())
-        trayIcon.create()
+        createIcon()
         listenThread.start()
         while (1):
             order = raw_input().lower()
@@ -290,10 +297,7 @@ def main(stop_event):
         quitEvent.set()
 
 def onExit():
-    try:
-        trayIcon.delete()
-    except Exception as e:
-        pass
+    deleteIcon()
     listenThread.stop()
 
 atexit.register(onExit)
