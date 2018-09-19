@@ -54,10 +54,13 @@ showWindow = True
 
 def _onLeftClick(*args):
     global showWindow
-    showWindow = not showWindow
-    winUtil.show(int(showWindow))
-    if showWindow:
-        winUtil.setForeground()
+    if len(manager.getExpired()) > 0:
+        manager.later(getNow() + alarmInterval)
+    else:
+        showWindow = not showWindow
+        winUtil.show(int(showWindow))
+        if showWindow:
+            winUtil.setForeground()
 
 def createCloser(clock):
     def closer(*args, **kwargs):
@@ -71,7 +74,7 @@ def _addition_menu():
     clocks = manager.getExpired()
     texts = _clocksToStrings(clocks)
     for i in range(len(clocks) - 1, -1, -1):
-        result.append(('close \'' + texts[i] + '\'', None, createCloser(clocks[i])))
+        result.append(('cancel \'' + texts[i] + '\'', None, createCloser(clocks[i])))
     return result
 
 def getTitle():
