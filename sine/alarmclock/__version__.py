@@ -9,6 +9,6 @@
 #  dP__Yb  88      dP__Yb  88""8.  88YbdP88 Yb      88     Yb    dp Yb      88"Yb 
 # dP""""Yb 888888 dP""""Yb 88  "8. 88 YY 88  YboodP 888888  YboodP   YboodP 88  Yb
 
-VERSION = (0, 6, 2)
+VERSION = (0, 6, 3)
 
 __version__ = '.'.join(map(str, VERSION))

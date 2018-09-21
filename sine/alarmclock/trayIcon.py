@@ -54,7 +54,7 @@ showWindow = True
 
 def _onLeftClick(*args):
     global showWindow
-    if len(manager.getExpired()) > 0:
+    if len(manager.getReminds()) > 0:
         manager.later(getNow() + alarmInterval)
     else:
         showWindow = not showWindow
