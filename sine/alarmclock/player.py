@@ -1,12 +1,12 @@
 # coding=utf-8
 '''
 “闹铃”播放器。可多次调用，前后值相同不会产生影响。
-唯一接口：
+唯一接口: 
 play(wav_filename)循环播放wav音频（不可为'default'）
 play('default')播放windows beep声，可以在配置文件beep.conf设置样式（出现win7没有声音的问题，但在播放音乐时有声音，也可能是声卡问题）
 play('')不作变化
 play(None)停止
-此外还可以用win32自带系统声音：
+此外还可以用win32自带系统声音: 
 'SystemAsterisk' Asterisk
 'SystemExclamation' Exclamation
 'SystemExit' Exit Windows
@@ -15,10 +15,11 @@ play(None)停止
 'SystemDefault'
 '''
 
+import os
 import winsound
 from sine.threads import ReStartableThread
 from exception import ClientException
-import data
+from globalData import data, useDefault, eManager
 
 _list = []
 
@@ -42,13 +43,13 @@ def _init():
     default_pattern = [(600,50),(200,),(600,50),(300,)]
     lines = []
     try:
-        data.useDefault(data.data['location'], beep_filename)
+        useDefault(data['location'], beep_filename)
         with open(beep_filename, 'r') as file:
             for line in LineReader(file):
                 key, value = loadSingle(line)
                 lines.append(key + value)
     except Exception, e:
-        warn('load beep pattern from file', beep_filename, 'failed, will use default value.', e)
+        warn(u'从文件 %s 读取beep样式失败，将会使用默认值。' % (beep_filename), e)
         beep_pattern = default_pattern
 
     try:
@@ -59,20 +60,20 @@ def _init():
                 if len(array) > 1:
                     frequency = int(array[0].strip())
                     if (frequency < 37 or frequency > 32767):
-                        raise ClientException('frequency must be in 37 thru 32767, but meet ' + frequency)
+                        raise ClientException(u'频率必须介于 37 与 32767 之间:', frequency)
                     duration = int(array[1].strip())
                     if (duration <= 0):
-                        raise ClientException('duration must be positive, but meet ' + duration)
-                    if (duration > 10000):
-                        raise ClientException('duration is too big, more than 10000, but meet ' + duration)
+                        raise ClientException(u'持续时间必须为正:', duration)
+                    if (duration > 2000):
+                        raise ClientException(u'持续时间过长（大于2000毫秒）:', duration)
                     beep_pattern.append((frequency, duration))
                 else:
                     last = int(array[0].strip())
                     if (last <= 0):
-                        raise ClientException('last must be positive, but meet ' + last)
+                        raise ClientException(u'间隔时间必须为正:', last)
                     beep_pattern.append((last,))
     except Exception, e:
-        warn('parse beep pattern failed, will use default value.', e)
+        warn(u'读取beep样式失败，将会使用默认值。', e)
         beep_pattern = default_pattern
 
     for s in beep_pattern:
@@ -91,27 +92,33 @@ def _alarm(stop_event):
             func()
     return
 
-_name = None # 必然非空''
+_name = None # 保存当前播放的内容，字符串，必然非空''
+_expect = None # 静音时保存期望播放的内容
 _beep = 'default'
 _alarmThread = ReStartableThread(target=_alarm)
 
 def play(name):
+    '''静音时保存期望播放的内容，并把参数当做None以实现停止播放'''
     global _name
-    if data.data['quiet']:
+    if not data['sound']:
+        _expect = name
         name = None
     if _name == name or name == '':
         return
     if _name != None: # 正在播则停止当前beep或者音乐
-        _alarmThread.stop()
-        _alarmThread.join(1)
+        _alarmThread.stop(1)
         winsound.PlaySound(None, winsound.SND_PURGE)
     if name != None:
-        if name == _beep or not isLegal(name):
+        if name == _beep:
             _alarmThread.start()
         else:
-            # 播放系统声音，或用绝对路径播放wav音频（后者优先）
-            winsound.PlaySound(name, winsound.SND_ALIAS | winsound.SND_ASYNC | winsound.SND_LOOP)
-            winsound.PlaySound(name, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_LOOP)
+            # 播放wav音频，或者系统声音
+            if os.path.isfile(name):
+                winsound.PlaySound(name, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_LOOP)
+            elif os.path.isfile(name + '.wav'):
+                winsound.PlaySound(name + '.wav', winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_LOOP)
+            elif name in _extraLegal:
+                winsound.PlaySound(name, winsound.SND_ALIAS | winsound.SND_ASYNC | winsound.SND_LOOP)
     _name = name
     return
 
@@ -127,7 +134,6 @@ _beep,
 
 def isLegal(name):
     '''检查音频文件是否存在或为以上合法系统值。'''
-    import os
     if name in _extraLegal:
         return True
     if os.path.isfile(name):
@@ -138,4 +144,12 @@ def isLegal(name):
 
 def assertLegal(name):
     if not isLegal(name):
-        raise ClientException('wav file \''+name+'\' or \''+name+'.wav\' not exists or not system sound')
+        raise ClientException(u'波形文件 \'%s\' 或者 \'%s.wav\' 不存在（也不是系统声音）。' % (name, name))
+
+def _handleSoundChange(unused):
+    if data['sound']:
+        play(_expect)
+    else:
+        play(None)
+
+eManager.addListener('sound.change', _handleSoundChange)

@@ -1,8 +1,8 @@
 # coding=utf-8
 '''
-taskbar flashing and window showing helpers on windows.
-
-depend on package win32api and win32gui.
+windows 窗口相关的辅助接口函数。
+提供任务栏闪烁、显示隐藏窗口、置顶窗口等。
+依赖于 win32api 和 win32gui 。
 '''
 
 import win32api
@@ -44,10 +44,16 @@ def stopFlash():
 def show(swFlag):
     win32gui.ShowWindow(hWnd, swFlag)
 
+def isForeground():
+    return win32gui.GetForegroundWindow() == hWnd
+
 def setForeground():
     try:
         win32gui.SetForegroundWindow(hWnd)
     except Exception as e:
         pass
+
+def bringToTop():
+    win32gui.BringWindowToTop(hWnd)
 
 refreshWindow()

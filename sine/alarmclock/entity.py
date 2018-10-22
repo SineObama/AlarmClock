@@ -1,33 +1,34 @@
 # coding=utf-8
+'''闹钟实体，也有一些表现差异的逻辑代码'''
 
 import datetime
 import mydatetime
-from mydatetime import getNow, getNextFromWeekday, everyday
+from mydatetime import *
 from parsing import zero
-from data import data
+from globalData import data, config, eManager
 from exception import ClockException
 
-# 闹钟实体
 class AlarmClock(dict):
     '''
-    time: 闹钟时间
-    expired: 提醒过
-    remindTime: 提醒时间（响铃时间）
-    remindAhead: 提前提醒时间（比如1分钟）
-    msg: 信息
-    on: 开关
-    sound: 铃声，见player模块'''
+    闹钟基类。字段如下:
+    time:datetime.datetime      闹钟时间
+    expired:Boolean             是否到期/提醒过
+    remindTime:datetime.datetime 提醒时间（响铃时间）
+    remindAhead:datetime.timedelta 提前提醒时间（比如1分钟）
+    msg:Str                     信息
+    on:Boolean                  开关
+    sound:Str                   铃声，见 player 模块'''
     def __init__(self, dic):
         '''必须含义time字段'''
         self.update(dic)
         if not self.has_key('time'):
-            raise ClockException('internal error, no time')
+            raise ClockException(u'内部错误，找不到闹钟时间。')
         self.setdefault('msg', '')
         self.setdefault('expired', False)
-        self.setdefault('remindAhead', datetime.timedelta(0, data['config']['default_remindAhead']))
+        self.setdefault('remindAhead', datetime.timedelta(0, config['default_remindAhead']))
         self.setdefault('remindTime', dic['time'] - self['remindAhead'])
         self.setdefault('on', True)
-        self.setdefault('sound', data['config']['default_sound'])
+        self.setdefault('sound', config['default_sound'])
     
     def __repr__(self):
         return self.__class__.__name__ + '(' + dict.__repr__(self) + ')'
@@ -42,9 +43,11 @@ class AlarmClock(dict):
             return None
 
     def checkRemind(self, now):
-        '''新增过期状态。这里只会开启状态。
+        '''如果需要提醒则会开启过期状态。
         返回是否需要提醒。'''
         if self['on'] and self['remindTime'] <= now:
+            if self['expired'] == False:
+                eManager.sendEvent('clock.remind', self)
             self['expired'] = True
             return True
         return False
@@ -54,11 +57,13 @@ class AlarmClock(dict):
         return self['on'] and self['expired']
     
     def resetTime(self, time):
+        '''设置时间。会级联更新一些字段'''
         self['time'] = time
         self['remindTime'] = time - self['remindAhead']
         self['expired'] = False
 
     def repeatStr(self):
+        '''获取自身重复内容'''
         return ''
 
     def editTime(self, date_time):
@@ -68,6 +73,7 @@ class AlarmClock(dict):
         self['expired'] = False
 
     def cancel(self):
+        '''取消闹钟，不同类型的闹钟可能有一些连带效应。'''
         self['on'] = False
 
     def switch(self):
@@ -80,89 +86,76 @@ class AlarmClock(dict):
         self['expired'] = False
 
 class OnceClock(AlarmClock):
-    '''一次性闹钟，用完删除
-        weekdays:string 格式如：'12345  ', '1 3 567' '''
+    '''一次性闹钟，取消后会被删除'''
     def switch(self):
         self['on'] = False
 
 class WeeklyClock(AlarmClock):
-    '''星期重复闹钟，不重复时用完自动关闭'''
+    '''
+    星期重复闹钟，无重复设置时取消后自动关闭。额外字段:
+    weekdays:string 格式如: '12345  ', '1 3 567'
+    '''
     def __init__(self, dic):
         AlarmClock.__init__(self, dic)
         if not self.has_key('weekdays'):
-            raise ClockException('internal error, no weekdays')
-        self.editWeekdays(self['weekdays'])
+            raise ClockException(u'内部错误，找不到星期。')
+        self['weekdays'] = formatWeekdays(self['weekdays'])
 
-    def refresh(self):
-        '''更新过期闹钟'''
+    def refresh(self, time=None):
+        '''更新时间，在今天或 time 之后重新开始计算，但会确保比现在晚。'''
         now = getNow()
-        if self['on'] and self['time'] < now:
-            self.resetTime(getNextFromWeekday(now, self['time'], self['weekdays']))
+        if time != None:
+            self.resetTime(getNextFromWeekday(now, time, self['weekdays']))
+        else:
+            self.resetTime(getNextFromWeekday(now, self['time'], self['weekdays'], True))
 
     def editWeekdays(self, weekdays):
-        '''修改星期，对输入进行格式化'''
-        if weekdays == None:
-            weekdays = ''
-        d = {}
-        for i in everyday:
-            d[i] = False
-        for i in weekdays:
-            d[i] = True
-        weekdays = ''
-        for i in everyday:
-            weekdays += i if d[i] else ' '
-        self['weekdays'] = weekdays
+        '''修改星期。会格式化输入'''
+        self['weekdays'] = formatWeekdays(weekdays)
+        self.refresh(self['time'])
 
     def repeatStr(self):
         return self['weekdays']
 
     def editTime(self, date_time):
-        '''过时则从给定时间开始算下一天。'''
-        now = getNow()
-        if date_time <= now:
-            date_time = getNextFromWeekday(now, date_time, self['weekdays'])
-        AlarmClock.editTime(self, date_time)
+        '''如果时间不在重复周期上，会自动往后推。'''
+        AlarmClock.editTime(self, getNextFromWeekday(getNow(), date_time, self['weekdays']))
 
     def cancel(self):
-        '''取消下一个提醒'''
-        now = getNow()
+        '''取消下一个提醒，时间顺延往后'''
         if self['weekdays'].isspace():
             self['on'] = False
         else:
-            nexttime = getNextFromWeekday(self['time'] if self['time'] > now else now, self['time'], self['weekdays'])
-            self.resetTime(nexttime)
+            self.refresh(self['time'] + day)
 
     def switch(self):
-        '''开启时以当前时间为准，重置为下一个闹钟时间'''
+        '''会从现在开始重新计算下一次时间'''
         AlarmClock.switch(self)
-        now = getNow()
-        if self['on'] and self['time'] < now:
-            self.resetTime(getNextFromWeekday(now, self['time'], self['weekdays']))
-
+        self.refresh()
 
 class PeriodClock(AlarmClock):
-    '''周期重复闹钟
-       period:datetime.timedelta 比如1小时（冷却时间）'''
+    '''
+    周期重复闹钟
+    period:datetime.timedelta 间隔时间（比如1小时）
+    '''
     def __init__(self, dic):
         AlarmClock.__init__(self, dic)
         if not self.has_key('period'):
-            raise ClockException('internal error, no period')
+            raise ClockException(u'内部错误，找不到周期。')
         self.editPeriod(dic['period'])
 
     def editPeriod(self, period):
         '''修改周期'''
         if not period:
-            raise ClockException('period can not be 0')
+            raise ClockException(u'周期不能为0。')
         self['period'] = period
 
     def repeatStr(self):
         return (zero + self['period']).strftime('%H:%M:%S')
         
     def cancel(self):
-        '''以当前时间重新开始计时'''
-        now = getNow()
-        nexttime = now + self['period']
-        self.resetTime(nexttime)
+        '''从现在重新开始计时'''
+        self.resetTime(getNow() + self['period'])
 
     def switch(self):
         '''开启时如果过期，则以当前时间重新开始计时'''

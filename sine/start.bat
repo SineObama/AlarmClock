@@ -1,4 +1,5 @@
 d:
 cd D:\sin\Git\AlarmClock\sine
-python -m alarmclock || pause
+python -m alarmclock
+pause
  

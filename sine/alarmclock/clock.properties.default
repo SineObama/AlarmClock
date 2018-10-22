@@ -2,6 +2,10 @@
 warning_pause=1
 
 ##提醒设置
+# 声音（默认值）
+sound=1
+# 消息提示（默认值）
+show_msg=1
 # 任务栏闪烁
 taskbar_flash=1
 # 屏幕显示（闪烁）方式，多个数字均分1秒时长，0代表不显示，1显示，以实现闪烁效果
@@ -41,3 +45,6 @@ state.ON=ON
 state.OFF=OFF
 
 datafile=clocks.txt
+
+# 记录调试信息
+debug=0

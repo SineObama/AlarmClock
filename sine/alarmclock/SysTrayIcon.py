@@ -1,3 +1,4 @@
+# coding=utf-8
 #!/usr/bin/env python
 # Module     : SysTrayIcon.py
 # Synopsis   : Windows System tray icon.
@@ -18,6 +19,9 @@ try:
     import winxpgui as win32gui
 except ImportError:
     import win32gui
+import mylogging
+
+logger = mylogging.getLogger(__name__)
 
 class SysTrayIcon(object):
     '''TODO'''
@@ -42,7 +46,7 @@ class SysTrayIcon(object):
         self.LCC = left_click_callback
         self.AMC = addition_menu_callback
         
-        static_options = static_options + (('Quit', None, self.QUIT),)
+        static_options = static_options + ((u'退出', None, self.QUIT),)
         self._next_action_id = self.FIRST_ID
         self.static_actions = dict()
         self.static_options = self._add_ids_to_menu_options(list(static_options), self.static_actions)
@@ -167,7 +171,16 @@ class SysTrayIcon(object):
         
         pos = win32gui.GetCursorPos()
         # See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/menus_0hdi.asp
-        win32gui.SetForegroundWindow(self.hwnd)
+        try:
+            win32gui.BringWindowToTop(self.hwnd)
+            win32gui.SetForegroundWindow(self.hwnd)
+        except Exception as e:
+            if e[0] == 0:
+                # (0, 'SetForegroundWindow', 'No error message is available')
+                # 设置foreground失败，一般为全屏时调用异常
+                pass
+            else:
+                logger.warn('exception while showing menu. ignored.', exc_info=1)
         win32gui.TrackPopupMenu(menu,
                                 win32con.TPM_LEFTALIGN,
                                 pos[0],
