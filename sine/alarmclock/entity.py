@@ -2,11 +2,11 @@
 '''闹钟实体，也有一些表现差异的逻辑代码'''
 
 import datetime
-import mydatetime
-from mydatetime import *
-from parsing import zero
-from globalData import data, config, eManager
-from exception import ClockException
+from . import mydatetime
+from .mydatetime import *
+from .parsing import zero
+from .globalData import data, config, eManager
+from .exception import ClockException
 
 class AlarmClock(dict):
     '''
@@ -21,7 +21,7 @@ class AlarmClock(dict):
     def __init__(self, dic):
         '''必须含义time字段'''
         self.update(dic)
-        if not self.has_key('time'):
+        if 'time' not in self:
             raise ClockException(u'内部错误，找不到闹钟时间。')
         self.setdefault('msg', '')
         self.setdefault('expired', False)
@@ -97,7 +97,7 @@ class WeeklyClock(AlarmClock):
     '''
     def __init__(self, dic):
         AlarmClock.__init__(self, dic)
-        if not self.has_key('weekdays'):
+        if 'weekdays' not in self:
             raise ClockException(u'内部错误，找不到星期。')
         self['weekdays'] = formatWeekdays(self['weekdays'])
 
@@ -140,7 +140,7 @@ class PeriodClock(AlarmClock):
     '''
     def __init__(self, dic):
         AlarmClock.__init__(self, dic)
-        if not self.has_key('period'):
+        if 'period' not in self:
             raise ClockException(u'内部错误，找不到周期。')
         self.editPeriod(dic['period'])
 

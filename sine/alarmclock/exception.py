@@ -25,7 +25,7 @@ class ClientException(Exception):
         return ' '.join(args)
     def printMsg(self):
         for i in self.args:
-            sys.stdout.write(i)
+            sys.stdout.write(str(i))
             sys.stdout.write(' ')
         sys.stdout.write('\n')
 class ClockException(ClientException):

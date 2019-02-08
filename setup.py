@@ -115,6 +115,38 @@ class ReinstallCommand(MyCommand):
         
         sys.exit()
 
+class Reinstall3Command(MyCommand):
+    """repack the package and reinstall locally."""
+    def run(self):
+        try:
+            self.status('Removing previous builds…')
+            rmtree(os.path.join(here, 'dist'))
+        except OSError:
+            pass
+
+        pip3path = os.getenv('PYTHON3_HOME')
+        if not pip3path:
+            pip3path = 'pip3'
+        else:
+            pip3path += '\\Scripts\\pip3'
+
+        self.status('Building Source and Wheel (universal) distribution…')
+        os.system('{0} setup.py sdist bdist_wheel --universal'.format(sys.executable))
+
+        self.status('Uninstalling the package locally')
+        os.system(pip3path + ' uninstall ' + NAME)
+
+        self.status('Installing the package locally')
+        for name in os.listdir('dist'):
+            if name.endswith('.whl'):
+                break
+        else:
+            self.status('internal error: can not find .whl file in dist/')
+            sys.exit()
+        os.system(pip3path + ' install dist/' + name)
+        
+        sys.exit()
+
 class UninstallCommand(MyCommand):
     def run(self):
         self.status('Uninstalling the package locally')
@@ -158,6 +190,7 @@ setup(
     cmdclass={
         'upload': UploadCommand,
         'rei': ReinstallCommand,
+        'rei3': Reinstall3Command,
         'uni': UninstallCommand,
     },
 )

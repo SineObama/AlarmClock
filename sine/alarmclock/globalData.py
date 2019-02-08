@@ -6,9 +6,9 @@
 
 import os.path as spath
 import shutil
-import mylogging
+from . import mylogging
 from sine.event import EventManager
-from __version__ import __version__ as version
+from .__version__ import __version__ as version
 
 clocks = []
 data = {}
@@ -22,7 +22,7 @@ def _init():
     import sys
     from sine.properties import load, loadSingle, LineReader
     from sine.path import Path
-    from initUtil import warn
+    from .initUtil import warn
 
     def boolConverter(s):
         '''对空或者0开头的字符串视为False，其余视为True'''
@@ -43,7 +43,7 @@ def _init():
         useDefault(location, conf_filename)
         with open(conf_filename, 'r') as file:
             config.update(load(file))
-    except Exception, e:
+    except Exception as e:
         warn(u'从 %s 文件加载配置失败，将会使用默认配置。' % (conf_filename), e)
         allMiss = True
 
@@ -98,13 +98,13 @@ def _init():
             config[key] = default
     else:
         for (key, default, converter) in default_config:
-            if not config.has_key(key):
+            if key not in config:
                 warn(u'找不到设置\'%s\'，将会使用默认值\'%s\'。' % (key, str(default)))
                 config[key] = default
             elif converter:
                 try:
                     config[key] = converter(config[key])
-                except Exception, e:
+                except Exception as e:
                     warn(u'读取\'%s=%s\'异常，将会使用默认值\'%s\'。' % (key, str(config[key]), str(default)), e)
                     config[key] = default
 
@@ -124,7 +124,7 @@ def _init():
             for line in LineReader(file):
                 key, value = loadSingle(line)
                 formats.append((key, value.split(',')))
-    except Exception, e:
+    except Exception as e:
         warn(u'从 %s 文件读取时间识别格式出错，将会使用默认格式。' % (format_filename), e)
         formats = [(   '%M'   ,        ['minute', 'second', 'microsecond']),
                   ('%H:'     ,['hour', 'minute', 'second', 'microsecond']),
@@ -147,7 +147,7 @@ def _init():
             for line in LineReader(file):
                 key, value = loadSingle(line)
                 formats.append((key, value.split(',')))
-    except Exception, e:
+    except Exception as e:
         warn(u'从 %s 文件读取日期识别格式出错，将会使用默认格式。' % (format_filename), e)
         formats = [(     '/%d',                 ['day']),
                   (   '%m/%d',        ['month', 'day']),

@@ -10,15 +10,19 @@ import threading
 from plone.synchronize import synchronized
 from sine.threads import ReStartableThread
 # 本地依赖
-from globalData import clocks, data, config, eManager, title
-from parsing import *
-from mydatetime import getNow, getNextFromWeekday, getNextAfterNow
-from entity import AlarmClock, OnceClock, WeeklyClock, PeriodClock
-from exception import ClientException, NoStringException
-import formatter
-import player
-import mylogging
-import manager
+from .globalData import clocks, data, config, eManager, title
+from .parsing import *
+from .mydatetime import getNow, getNextFromWeekday, getNextAfterNow
+from .entity import AlarmClock, OnceClock, WeeklyClock, PeriodClock
+from .exception import ClientException, NoStringException
+from . import formatter
+from . import player
+from . import mylogging
+from . import manager
+
+# 兼容 python3
+if sys.version_info.major == 3:
+    raw_input = input
 
 logger = mylogging.getLogger(__name__)
 
@@ -161,7 +165,7 @@ class MainPage(Page):
             try:
                 second = ''
                 second, remain2 = parseString(remain)
-            except NoStringException, e:
+            except NoStringException as e:
                 pass
             if second.startswith('w'):
                 weekdays, msg = parseString(remain[1:])
@@ -319,7 +323,7 @@ def _screen(stop_event):
                 string = ''
                 for i, clock in enumerate(reminds):
                     string += fmt(i+1, clock) + '\n'
-                sys.stdout.write(string)
+                write(string)
         pos += 1
     return
 
