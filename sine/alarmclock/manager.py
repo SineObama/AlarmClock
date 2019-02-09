@@ -3,10 +3,10 @@
 
 import threading
 from plone.synchronize import synchronized
-from mydatetime import *
-from exception import ClockException
-from entity import *
-from globalData import clocks, data, config
+from .mydatetime import *
+from .exception import ClockException
+from .entity import *
+from .globalData import clocks, data, config
 
 _data_filepath = config['datafile']
 _sort = lambda x:(x['time'] if x['on'] else datetime.datetime.max)
@@ -18,12 +18,13 @@ def _init():
     import os
     import shutil
     from sine.path import Path
-    from initUtil import warn
-    from player import isLegal
+    from .initUtil import warn
+    from .player import isLegal
     # 读取数据文件，忽略文件不存在的情况，读取异常时对原文件进行备份
     try:
         fail = False
         with open(_data_filepath, 'a+') as file:
+            file.seek(0)
             for line in file:
                 try:
                     clocks.append(eval(line))
@@ -36,9 +37,9 @@ def _init():
             while (os.path.isfile(location + str(tail))):
                 tail += 1
             shutil.copyfile(_data_filepath, location + str(tail))
-    except Exception, e:
+    except Exception as e:
         warn(u'打开闹钟数据文件 %s 失败。' % (_data_filepath), e)
-        raw_input('press enter to exit')
+        os.system('pause')
         sys.exit(1)
     refreshWeekly()
     resortAndSave()

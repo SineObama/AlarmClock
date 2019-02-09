@@ -10,22 +10,14 @@ class ClientException(Exception):
         '''用于不小心 print 时的自动转换，目标编码为 stdout 指定'''
         args = []
         for i in self.args:
-            if isinstance(i, unicode):
-                args.append(i.encode(sys.stdout.encoding))
-            else:
-                args.append(i)
-        return ' '.join(args)
-    def __unicode__(self):
-        args = []
-        for i in self.args:
-            if isinstance(i, str):
+            if isinstance(i, bytes):
                 args.append(i.decode(sys.stdout.encoding))
             else:
                 args.append(i)
         return ' '.join(args)
     def printMsg(self):
         for i in self.args:
-            sys.stdout.write(i)
+            sys.stdout.write(str(i))
             sys.stdout.write(' ')
         sys.stdout.write('\n')
 class ClockException(ClientException):

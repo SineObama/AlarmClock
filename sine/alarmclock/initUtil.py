@@ -3,8 +3,9 @@
 初始化异常时进行特定输出和程序暂停，这里只提供调用接口、保存状态。
 '''
 
-import mylogging
+from . import mylogging
 import sys
+import os
 
 logger = mylogging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ def warn(msg, exc=None):
     if exc:
         for arg in exc.args:
             sys.stdout.write(' ')
-            sys.stdout.write(arg)
+            sys.stdout.write(str(arg))
     sys.stdout.write('\n')
     logger.info(msg, exc_info=(exc!=None))
     _warning = True
@@ -28,8 +29,7 @@ def reset():
 def warning_pause():
     '''有警告时暂停，等待回车'''
     if _warning:
-        print u'\n按回车继续。。。'
-        raw_input()
+        os.system('pause')
 
 def doNothing(*args, **kwargs):
     '''用于赋值给不支持的操作'''

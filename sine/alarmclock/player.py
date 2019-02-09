@@ -18,8 +18,8 @@ play(None)停止
 import os
 import winsound
 from sine.threads import ReStartableThread
-from exception import ClientException
-from globalData import data, useDefault, eManager
+from .exception import ClientException
+from .globalData import data, useDefault, eManager
 
 _list = []
 
@@ -35,7 +35,7 @@ def _init():
             time.sleep(last)
         return __func_sleep
 
-    from initUtil import warn
+    from .initUtil import warn
     from sine.properties import loadSingle, LineReader
 
     # 读入beep样式信息
@@ -44,11 +44,11 @@ def _init():
     lines = []
     try:
         useDefault(data['location'], beep_filename)
-        with open(beep_filename, 'r') as file:
+        with open(beep_filename, 'r', encoding='latin') as file:
             for line in LineReader(file):
                 key, value = loadSingle(line)
                 lines.append(key + value)
-    except Exception, e:
+    except Exception as e:
         warn(u'从文件 %s 读取beep样式失败，将会使用默认值。' % (beep_filename), e)
         beep_pattern = default_pattern
 
@@ -72,7 +72,7 @@ def _init():
                     if (last <= 0):
                         raise ClientException(u'间隔时间必须为正:', last)
                     beep_pattern.append((last,))
-    except Exception, e:
+    except Exception as e:
         warn(u'读取beep样式失败，将会使用默认值。', e)
         beep_pattern = default_pattern
 

@@ -12,14 +12,14 @@ import win32con
 import sys
 import time
 from threading import Thread, Lock
-from SysTrayIcon import SysTrayIcon
-from TrayMsg import send
-from globalData import clocks, data, config, useDefault, eManager, title
+from .SysTrayIcon import SysTrayIcon
+from .TrayMsg import send
+from .globalData import clocks, data, config, useDefault, eManager, title
 from sine.threads import ReStartableThread
-import winUtil
-import manager
-from mydatetime import *
-import mylogging
+from . import winUtil
+from . import manager
+from .mydatetime import *
+from . import mylogging
 
 logger = mylogging.getLogger(__name__)
 
@@ -201,7 +201,7 @@ def _clocksToStrings(_clocks, maxLen=24):
     '''把闹钟拼接为多行文本，没有则返回无闹钟。其中限制闹钟内容的长度为 maxLen 。'''
     texts = []
     for clock in _clocks:
-        msg = clock['msg'].decode(sys.stdout.encoding)
+        msg = clock['msg']
         if len(msg) > maxLen:
             msg = msg[:maxLen] + '...'
         texts.append(clock['time'].strftime("%H:%M ") + msg)
@@ -210,7 +210,7 @@ def _clocksToStrings(_clocks, maxLen=24):
     return texts
 
 def _listen(stop_event):
-    '''实现托盘涂壁闪烁'''
+    '''实现托盘图标闪烁'''
     iconFlash = False
     flag = True
     while not stop_event.wait(0.25):

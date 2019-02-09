@@ -6,9 +6,9 @@
 
 import os.path as spath
 import shutil
-import mylogging
+from . import mylogging
 from sine.event import EventManager
-from __version__ import __version__ as version
+from .__meta__ import VERSION as version
 
 clocks = []
 data = {}
@@ -22,7 +22,7 @@ def _init():
     import sys
     from sine.properties import load, loadSingle, LineReader
     from sine.path import Path
-    from initUtil import warn
+    from .initUtil import warn
 
     def boolConverter(s):
         '''对空或者0开头的字符串视为False，其余视为True'''
@@ -41,21 +41,23 @@ def _init():
     allMiss = False
     try:
         useDefault(location, conf_filename)
-        with open(conf_filename, 'r') as file:
+        with open(conf_filename, 'r', encoding='latin') as file:
             config.update(load(file))
-    except Exception, e:
+    except Exception as e:
         warn(u'从 %s 文件加载配置失败，将会使用默认配置。' % (conf_filename), e)
         allMiss = True
 
     # 猜测编码为utf8或gbk（简单对比转换出错率），并解码
     utf8_error = 0
     for k, v in config.items():
+        v = v.encode('latin')
         try:
             v.decode('utf8')
         except Exception as e:
             utf8_error += 1
     gbk_error = 0
     for k, v in config.items():
+        v = v.encode('latin')
         try:
             v.decode('gbk')
         except Exception as e:
@@ -70,7 +72,7 @@ def _init():
     # 解码
     for k, v in config.items():
         try:
-            config[k] = v.decode(encoding).encode(sys.stdout.encoding)
+            config[k] = v.encode('latin').decode(encoding)
         except Exception as e:
             pass
 
@@ -98,13 +100,13 @@ def _init():
             config[key] = default
     else:
         for (key, default, converter) in default_config:
-            if not config.has_key(key):
+            if key not in config:
                 warn(u'找不到设置\'%s\'，将会使用默认值\'%s\'。' % (key, str(default)))
                 config[key] = default
             elif converter:
                 try:
                     config[key] = converter(config[key])
-                except Exception, e:
+                except Exception as e:
                     warn(u'读取\'%s=%s\'异常，将会使用默认值\'%s\'。' % (key, str(config[key]), str(default)), e)
                     config[key] = default
 
@@ -120,11 +122,11 @@ def _init():
     try:
         useDefault(location, format_filename)
         formats = []
-        with open(format_filename, 'r') as file:
+        with open(format_filename, 'r', encoding='latin') as file:
             for line in LineReader(file):
                 key, value = loadSingle(line)
                 formats.append((key, value.split(',')))
-    except Exception, e:
+    except Exception as e:
         warn(u'从 %s 文件读取时间识别格式出错，将会使用默认格式。' % (format_filename), e)
         formats = [(   '%M'   ,        ['minute', 'second', 'microsecond']),
                   ('%H:'     ,['hour', 'minute', 'second', 'microsecond']),
@@ -143,11 +145,11 @@ def _init():
     try:
         useDefault(location, format_filename)
         formats = []
-        with open(format_filename, 'r') as file:
+        with open(format_filename, 'r', encoding='latin') as file:
             for line in LineReader(file):
                 key, value = loadSingle(line)
                 formats.append((key, value.split(',')))
-    except Exception, e:
+    except Exception as e:
         warn(u'从 %s 文件读取日期识别格式出错，将会使用默认格式。' % (format_filename), e)
         formats = [(     '/%d',                 ['day']),
                   (   '%m/%d',        ['month', 'day']),

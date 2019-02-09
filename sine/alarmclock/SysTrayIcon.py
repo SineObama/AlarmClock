@@ -19,7 +19,7 @@ try:
     import winxpgui as win32gui
 except ImportError:
     import win32gui
-import mylogging
+from . import mylogging
 
 logger = mylogging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ class SysTrayIcon(object):
                                self._add_ids_to_menu_options(option_action, menu_actions_by_id),
                                self._next_action_id))
             else:
-                print 'Unknown item', option_text, option_icon, option_action
+                print('Unknown item', option_text, option_icon, option_action)
             self._next_action_id += 1
         return result
         
@@ -257,8 +257,8 @@ if __name__ == '__main__':
     
     icons = itertools.cycle(glob.glob('*.ico'))
     hover_text = "SysTrayIcon.py Demo"
-    def hello(sysTrayIcon): print "Hello World."
-    def simon(sysTrayIcon): print "Hello Simon."
+    def hello(sysTrayIcon): print("Hello World.")
+    def simon(sysTrayIcon): print("Hello Simon.")
     def switch_icon(sysTrayIcon):
         sysTrayIcon.icon = icons.next()
         sysTrayIcon.refresh_icon()
@@ -268,6 +268,6 @@ if __name__ == '__main__':
                                                   ('Switch Icon', icons.next(), switch_icon),
                                                  ))
                    )
-    def bye(sysTrayIcon): print 'Bye, then.'
+    def bye(sysTrayIcon): print('Bye, then.')
     
     SysTrayIcon(icons.next(), hover_text, menu_options, on_quit=bye, default_menu_index=1)

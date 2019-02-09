@@ -7,14 +7,13 @@ import threading
 # library依赖
 from sine.threads import ReStartableThread
 # 本地依赖
-from globalData import clocks, data, config, eManager
-from mydatetime import getNow
-import initUtil
-import winUtil
-import player
-import mylogging
-import manager
-import userInterface
+from .globalData import clocks, data, config, eManager
+from .mydatetime import getNow
+from . import initUtil
+from . import player
+from . import mylogging
+from . import manager
+from . import userInterface
 
 logger = mylogging.getLogger(__name__)
 
@@ -61,7 +60,7 @@ listenThread = ReStartableThread(target=_listen)
 # 托盘图标 -----------------
 
 try:
-    from trayIcon import createIcon, deleteIcon
+    from .trayIcon import createIcon, deleteIcon
 except Exception as e:
     initUtil.warn(u'不支持托盘图标（包括消息提示）。', e)
     createIcon = deleteIcon = initUtil.doNothing
@@ -71,12 +70,12 @@ except Exception as e:
 
 try:
     if config['taskbar_flash']:
-        from winUtil import flash, stopFlash
+        from .winUtil import flash, stopFlash, show as show_window
         eManager.addListener('alarm.start', lambda data:flash(3, alarmLast, 500))
         eManager.addListener('alarm.stop', lambda data:stopFlash())
-except ImportError, e:
+except ImportError as e:
     initUtil.warn(u'不支持任务栏闪烁。', e)
-    flash = stopFlash = initUtil.doNothing
+    flash = stopFlash = show_window = initUtil.doNothing
 
 # 响铃超时延迟提醒
 eManager.addListener('alarm.timeout', lambda data:manager.later(getNow() + alarmInterval))
@@ -109,7 +108,7 @@ def mainLoop():
     logger.debug('begin quit')
 
     # 退出清理
-    winUtil.show(1)
+    show_window(1)
     initUtil.reset()
     eManager.stop()
     deleteIcon()

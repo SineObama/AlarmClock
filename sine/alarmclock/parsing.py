@@ -6,8 +6,8 @@
 '''
 
 import datetime
-from exception import ParseException, NoStringException
-from globalData import data, timeFormats, dateFormats
+from .exception import ParseException, NoStringException
+from .globalData import data, timeFormats, dateFormats
 
 def _tryReplace(ref, s, formats):
     '''
@@ -19,7 +19,7 @@ def _tryReplace(ref, s, formats):
     for fm in formats:
         try:
             target = datetime.datetime.strptime(s, fm[0])
-        except Exception, e:
+        except Exception as e:
             continue
         break
     if not target:

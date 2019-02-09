@@ -89,3 +89,6 @@ ENV/
 .ropeproject
 *.npy
 *.pkl
+
+# all folders begin with '.'
+.*/
