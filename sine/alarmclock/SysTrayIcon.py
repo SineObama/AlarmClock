@@ -175,7 +175,7 @@ class SysTrayIcon(object):
             win32gui.BringWindowToTop(self.hwnd)
             win32gui.SetForegroundWindow(self.hwnd)
         except Exception as e:
-            if e[0] == 0:
+            if e.args and e.args[0] == 0:
                 # (0, 'SetForegroundWindow', 'No error message is available')
                 # 设置foreground失败，一般为全屏时调用异常
                 pass
