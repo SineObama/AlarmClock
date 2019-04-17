@@ -51,6 +51,7 @@ stack_lock = threading.RLock()
 @synchronized(stack_lock)
 def append(page):
     stack.append(page)
+    cls()
     page.reprint()
     return
 @synchronized(stack_lock)
@@ -62,7 +63,8 @@ def pop(cls=None):
     return rtn
 
 def cls():
-    os.system('cls')
+    if not config['debug']:
+        os.system('cls')
     return
 
 def trigger_clock_change():
@@ -76,6 +78,7 @@ def reprintTop(*args, **kw):
     except Exception as e:
         pass
     if top:
+        cls()
         top.reprint()
 
 def saveAndReprint(*args, **kw):
@@ -91,7 +94,6 @@ class MainPage(Page):
         self[1] = trigger_clock_change
 
     def reprint(self):
-        cls()
         now = getNow()
         if len(clocks):
             write(u'闹钟: ')
@@ -194,7 +196,6 @@ class EditPage(Page):
         self[2] = reprintTop
     
     def reprint(self):
-        cls()
         clock = self.clock
         write(u' - 编辑 - \n')
         write('%s\n' % (on_str if clock['on'] else off_str))

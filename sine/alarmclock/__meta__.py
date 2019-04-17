@@ -4,7 +4,7 @@
 #      ""b    88    88   i 88   88
 #  "booodP    88    88    i88   888888
 
-_VERSION = (0, 7, 2)
+_VERSION = (0, 7, 3)
 
 DESCRIPTION = 'Windows command line alarm clock (python3)'
 URL = 'https://github.com/SineObama/AlarmClock'

@@ -187,9 +187,8 @@ def getTodayClock():
     today_clocks = []
     today = datetime.datetime.date(getNow())
     for clock in clocks:
-        if datetime.datetime.date(clock['time']) > today:
-            break
-        today_clocks.append(clock)
+        if datetime.datetime.date(clock['time']) == today:
+            today_clocks.append(clock)
     return today_clocks
 
 def _reset_icon(*ua, **uk):
