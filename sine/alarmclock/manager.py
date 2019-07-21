@@ -2,45 +2,43 @@
 '''闹钟管理/服务接口'''
 
 import threading
+import uuid
 from plone.synchronize import synchronized
+from sine.utils import Storage
 from .mydatetime import *
 from .exception import ClockException
 from .entity import *
 from .globalData import clocks, data, config
 
 _data_filepath = config['datafile']
-_sort = lambda x:(x['time'] if x['on'] else datetime.datetime.max)
+_sort = lambda x: (x['time'] if x['on'] else datetime.datetime.max)
 _clock_lock = threading.RLock()
+_storage = Storage(_data_filepath, load=False, encoding=config['encoding'])
+
 
 @synchronized(_clock_lock)
 def _init():
     import sys
     import os
     import shutil
-    from sine.path import Path
+    from sine.utils import Path
     from .initUtil import warn
     from .player import isLegal
     # 读取数据文件，忽略文件不存在的情况，读取异常时对原文件进行备份
     try:
-        fail = False
-        with open(_data_filepath, 'a+') as file:
-            file.seek(0)
-            for line in file:
-                try:
-                    clocks.append(eval(line))
-                except Exception as e:
-                    warn(u'读取一行闹钟数据失败: %s。' % (line), e)
-                    fail = True
-        if fail:
-            location = Path(_data_filepath).join('..').join('clocks_packup')
-            tail = 0
-            while (os.path.isfile(location + str(tail))):
-                tail += 1
-            shutil.copyfile(_data_filepath, location + str(tail))
+        _storage.reload()
     except Exception as e:
-        warn(u'打开闹钟数据文件 %s 失败。' % (_data_filepath), e)
-        os.system('pause')
-        sys.exit(1)
+        location = _data_filepath + '.bak.'
+        tail = 0
+        while (os.path.exists(location + str(tail))):
+            tail += 1
+        shutil.copyfile(_data_filepath, location + str(tail))
+        warn(u'加载数据文件 %s 异常，数据可能不全，已备份原文件。' % (_data_filepath), e)
+    finally:
+        for key, item in _storage.items():
+            clock = eval(item)
+            clock['key'] = key
+            clocks.append(clock)
     refreshWeekly()
     resortAndSave()
 
@@ -52,6 +50,7 @@ def _init():
         warn(u'默认铃声设置\'default_sound\'无效，将会使用beep音。', e)
         config['default_sound'] = 'default'
 
+
 def getReminds():
     '''检查是否有需要提醒的闹钟，并返回。主要的状态检查接口。'''
     reminds = []
@@ -61,6 +60,7 @@ def getReminds():
             reminds.append(clock)
     return reminds
 
+
 def getExpired():
     expired = []
     for clock in clocks:
@@ -68,10 +68,15 @@ def getExpired():
             expired.append(clock)
     return expired
 
+
 @synchronized(_clock_lock)
 def add(clock):
+    key = str(uuid.uuid4())
+    clock['key'] = key
     clocks.append(clock)
+    _storage.set(key, repr(clock))
     return
+
 
 @synchronized(_clock_lock)
 def get(index, defaultFirst=False):
@@ -86,6 +91,7 @@ def get(index, defaultFirst=False):
         raise ClockException(u'当前无闹钟。')
     return clocks[0]
 
+
 @synchronized(_clock_lock)
 def cancel(clock):
     '''取消闹钟
@@ -95,21 +101,27 @@ def cancel(clock):
     对周期重复: 以当前时间重新开始计时
     对关闭的闹钟无效'''
     now = getNow()
-    
+
     # choose clock
-    if clock == None: # choose first expired
+    if clock == None:  # choose first expired
         clock = _getFirstRemindOrExpired(clocks, now)
         if not clock:
             raise ClockException(u'没有可取消的闹钟。')
-    
+
     if not clock['on']:
         raise ClockException(u'此闹钟已关闭，无法取消。')
-    
+
     # cancel it
     clock.cancel()
     if isinstance(clock, OnceClock):
         clocks.remove(clock)
+        _storage.pop(clock['key'])
+    else:
+        _storage.set(clock['key'], repr(clock))
+    if _storage.getUtilization() < 0.2:
+        _storage.compress()
     return
+
 
 @synchronized(_clock_lock)
 def switch(indexs):
@@ -123,7 +135,7 @@ def switch(indexs):
     now = getNow()
     if len(clocks) == 0:
         return
-    
+
     # choose clock(s)
     chooseds = []
     if len(indexs) == 0:
@@ -133,13 +145,17 @@ def switch(indexs):
         for i, clock in enumerate(clocks):
             if i + 1 in indexs:
                 chooseds.append(clock)
-    
+
     # switch them
     for clock in chooseds:
         clock.switch()
         if isinstance(clock, OnceClock):
             clocks.remove(clock)
+            _storage.pop(clock['key'])
+        else:
+            _storage.set(clock['key'], repr(clock))
     return
+
 
 def _getFirstRemindOrExpired(_clocks, now):
     for clock in _clocks:
@@ -150,16 +166,20 @@ def _getFirstRemindOrExpired(_clocks, now):
             return clock
     return None
 
+
 @synchronized(_clock_lock)
 def remove(indexs):
     remain = []
     for i, clock in enumerate(clocks):
         if i + 1 not in indexs:
             remain.append(clock)
+        else:
+            _storage.pop(clock['key'])
     for i in range(len(clocks)):
         clocks.pop()
     clocks.extend(remain)
     return
+
 
 @synchronized(_clock_lock)
 def later(time):
@@ -170,21 +190,21 @@ def later(time):
     if len(reminds):
         for clock in reminds:
             clock['remindTime'] = time
+            _storage.set(clock['key'], repr(clock))
     else:
         now = getNow()
         for clock in clocks:
             if clock.isExpired():
                 clock['remindTime'] = time
+                _storage.set(clock['key'], repr(clock))
     return
+
 
 @synchronized(_clock_lock)
 def resortAndSave():
     clocks.sort(key=_sort)
-    with open(_data_filepath, 'w') as file:
-        for clock in clocks:
-            file.write(repr(clock))
-            file.write('\n')
     return
+
 
 @synchronized(_clock_lock)
 def refreshWeekly():
@@ -193,5 +213,16 @@ def refreshWeekly():
     for clock in clocks:
         if isinstance(clock, WeeklyClock) and not clock['expired']:
             clock.refresh(clock['time'])
+            _storage.set(clock['key'], repr(clock))
+
+
+@synchronized(_clock_lock)
+def editTime(clock, target):
+    clock.editTime(target)
+    _storage.set(clock['key'], repr(clock))
+
+@synchronized(_clock_lock)
+def save(clock):
+    _storage.set(clock['key'], repr(clock))
 
 _init()

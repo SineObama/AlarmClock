@@ -15,7 +15,7 @@ from threading import Thread, Lock
 from .SysTrayIcon import SysTrayIcon
 from .TrayMsg import send
 from .globalData import clocks, data, config, useDefault, eManager, title
-from sine.threads import ReStartableThread
+from sine.utils import ReStartableThread
 from . import winUtil
 from . import manager
 from .mydatetime import *
@@ -236,7 +236,7 @@ def _record(stop_event):
 def closeAndLater(tray):
     win32gui.DestroyWindow(tray.hwnd)
     manager.later(getNow() + alarmInterval)
-def _showMsg(clock):
+def _showMsg(key, clock):
     '''消息提示'''
     if data['show_msg']:
         send(clock['msg'],

@@ -7,7 +7,7 @@
 import os.path as spath
 import shutil
 from . import mylogging
-from sine.event import EventManager
+from sine.utils import EventManager
 from .__meta__ import VERSION as version
 
 clocks = []
@@ -20,8 +20,8 @@ title = u'闹钟 v' + version
 
 def _init():
     import sys
-    from sine.properties import load, loadSingle, LineReader
-    from sine.path import Path
+    from sine.utils.properties import load, loadSingle, LineReader
+    from sine.utils import Path
     from .initUtil import warn
 
     def boolConverter(s):
@@ -93,7 +93,10 @@ def _init():
     ('state.ON', 'ON', None),
     ('state.OFF', 'OFF', None),
     ('datafile', 'clocks.txt', None),
-    ('debug', False, boolConverter)]
+    ('encoding', 'utf-8', None),
+    ('debug', False, boolConverter),
+    ('debug.no_clear_screen', False, boolConverter),
+    ]
 
     if allMiss:
         for (key, default, converter) in default_config:

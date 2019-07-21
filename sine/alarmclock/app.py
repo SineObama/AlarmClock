@@ -5,7 +5,7 @@
 import datetime
 import threading
 # library依赖
-from sine.threads import ReStartableThread
+from sine.utils import ReStartableThread
 # 本地依赖
 from .globalData import clocks, data, config, eManager
 from .mydatetime import getNow
@@ -86,7 +86,7 @@ eManager.addListener('alarm.timeout', lambda data:player.play(None))
 
 # 退出事件
 quitEvent = threading.Event()
-eManager.addListener('quit', lambda data:quitEvent.set())
+eManager.addListener('quit', lambda *args:quitEvent.set())
 
 
 def mainLoop():
@@ -102,10 +102,10 @@ def mainLoop():
     uiLoop.start()
 
     # 阻塞等待退出事件
-    logger.debug('started')
+    logger.info('started')
     quitEvent.clear()
     quitEvent.wait()
-    logger.debug('begin quit')
+    logger.info('begin quit')
 
     # 退出清理
     show_window(1)
@@ -115,4 +115,4 @@ def mainLoop():
     listenThread.stop(1)
     stopFlash()
     player.play(None)
-    logger.debug('exit')
+    logger.info('exit')

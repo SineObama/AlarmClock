@@ -20,7 +20,7 @@ def warn(msg, exc=None):
             sys.stdout.write(' ')
             sys.stdout.write(str(arg))
     sys.stdout.write('\n')
-    logger.info(msg, exc_info=(exc!=None))
+    logger.warn(msg, exc_info=(exc!=None))
     _warning = True
 
 def reset():

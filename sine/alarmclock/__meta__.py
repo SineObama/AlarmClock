@@ -4,7 +4,7 @@
 #      ""b    88    88   i 88   88
 #  "booodP    88    88    i88   888888
 
-_VERSION = (0, 7, 3)
+_VERSION = (1, 0, 0)
 
 DESCRIPTION = 'Windows command line alarm clock (python3)'
 URL = 'https://github.com/SineObama/AlarmClock'
@@ -12,8 +12,5 @@ VERSION = '.'.join(map(str, _VERSION))
 REQUIRED = [
     'pypiwin32',
     'plone.synchronize',
-    'sine.threads>=0.1.6',
-    'sine.path',
-    'sine.properties',
-    'sine.event'
+    'sine.utils'
 ]

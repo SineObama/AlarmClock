@@ -17,7 +17,7 @@ play(None)停止
 
 import os
 import winsound
-from sine.threads import ReStartableThread
+from sine.utils import ReStartableThread
 from .exception import ClientException
 from .globalData import data, useDefault, eManager
 
@@ -36,7 +36,7 @@ def _init():
         return __func_sleep
 
     from .initUtil import warn
-    from sine.properties import loadSingle, LineReader
+    from sine.utils.properties import loadSingle, LineReader
 
     # 读入beep样式信息
     beep_filename = 'beep.properties'
@@ -146,7 +146,7 @@ def assertLegal(name):
     if not isLegal(name):
         raise ClientException(u'波形文件 \'%s\' 或者 \'%s.wav\' 不存在（也不是系统声音）。' % (name, name))
 
-def _handleSoundChange(unused):
+def _handleSoundChange(*args):
     if data['sound']:
         play(_expect)
     else:

@@ -8,7 +8,7 @@ import os
 import threading
 # library依赖
 from plone.synchronize import synchronized
-from sine.threads import ReStartableThread
+from sine.utils import ReStartableThread
 # 本地依赖
 from .globalData import clocks, data, config, eManager, title
 from .parsing import *
@@ -19,10 +19,6 @@ from . import formatter
 from . import player
 from . import mylogging
 from . import manager
-
-# 兼容 python3
-if sys.version_info.major == 3:
-    raw_input = input
 
 logger = mylogging.getLogger(__name__)
 
@@ -63,7 +59,7 @@ def pop(cls=None):
     return rtn
 
 def cls():
-    if not config['debug']:
+    if not config['debug.no_clear_screen']:
         os.system('cls')
     return
 
@@ -83,7 +79,7 @@ def reprintTop(*args, **kw):
 
 def saveAndReprint(*args, **kw):
     manager.resortAndSave()
-    reprintTop()
+    eManager.sendEvent('clock_sort')
 
 
 # 主页面 ---------------- 闹钟列表
@@ -142,7 +138,7 @@ class MainPage(Page):
                 index, remain = parseInt(order[1:])
                 target, unused = parseDateTime(remain, now)
                 target = getNextAfterNow(now, target)
-                manager.get(index).editTime(target)
+                manager.editTime(manager.get(index), target)
                 return 1
             # cancel alarm
             if order.startswith('a'):
@@ -230,6 +226,7 @@ class EditPage(Page):
                 target, unused = parseDateTime(order[1:], getNow())
                 target = getNextAfterNow(now, target)
                 clock.editTime(target)
+                manager.save(clock)
                 return 1
             # edit remind ahead
             if order.startswith('a'):
@@ -300,6 +297,7 @@ eManager.addListener('alarm.start', lambda data:append(AlarmPage()))
 eManager.addListener('time_leap', wake)
 eManager.addListener('cross_day', saveAndReprint)
 eManager.addListener('sound.change', reprintTop)
+eManager.addListener('clock_sort', reprintTop)
 eManager.addListener('show_msg.change', reprintTop)
 eManager.addListener('clock_change', saveAndReprint)
 
@@ -330,7 +328,7 @@ def _screen(stop_event):
 
 _screenThread = ReStartableThread(target=_screen)
 eManager.addListener('alarm.start', lambda data:_screenThread.start())
-def stopScreenFlashAndReprint(data):
+def stopScreenFlashAndReprint(key):
     _screenThread.stop()
     pop(AlarmPage)
 eManager.addListener('alarm.stop', stopScreenFlashAndReprint)
@@ -342,7 +340,7 @@ def mainLoop():
         os.system(u'title ' + title)
         append(MainPage())
         while (1):
-            order = raw_input().lower()
+            order = input().lower()
             logger.info('order: ' + order)
             try:
                 page = stack[-1]

@@ -6,7 +6,7 @@ import win32gui
 import win32con
 import time
 import threading
-from sine.threads import ReStartableThread
+from sine.utils import ReStartableThread
 
 class TrayMsg:
     count = 0

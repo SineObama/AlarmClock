@@ -44,7 +44,10 @@ warn=!!!
 state.ON=ON
 state.OFF=OFF
 
-datafile=clocks.txt
+datafile=clocks.csv
+encoding=utf-8
 
 # 记录调试信息
 debug=0
+# 更新时清屏
+debug.no_clear_screen=0
