@@ -252,7 +252,5 @@ _recordThread = ReStartableThread(target=_record)
 _recordThread.start()
 
 eManager.addListener('sound.change', _reset_icon)
-eManager.addListener('clock_change', _reset_icon)
+eManager.addListener('clock_sort', _reset_icon)
 eManager.addListener('clock.remind', _showMsg)
-eManager.addListener('time_leap', _reset_icon)
-eManager.addListener('cross_day', _reset_icon)

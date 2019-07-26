@@ -8,7 +8,7 @@ from sine.utils import Storage
 from .mydatetime import *
 from .exception import ClockException
 from .entity import *
-from .globalData import clocks, data, config
+from .globalData import clocks, data, config, eManager
 
 _data_filepath = config['datafile']
 _sort = lambda x: (x['time'] if x['on'] else datetime.datetime.max)
@@ -40,7 +40,7 @@ def _init():
             clock['key'] = key
             clocks.append(clock)
     refreshWeekly()
-    resortAndSave()
+    resort()
 
     # 检查音频文件是否存在
     for clock in clocks:
@@ -201,8 +201,9 @@ def later(time):
 
 
 @synchronized(_clock_lock)
-def resortAndSave():
+def resort():
     clocks.sort(key=_sort)
+    eManager.sendEvent('clock_sort')
     return
 
 

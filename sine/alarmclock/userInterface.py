@@ -77,9 +77,8 @@ def reprintTop(*args, **kw):
         cls()
         top.reprint()
 
-def saveAndReprint(*args, **kw):
-    manager.resortAndSave()
-    eManager.sendEvent('clock_sort')
+def resort(*args, **kw):
+    manager.resort()
 
 
 # 主页面 ---------------- 闹钟列表
@@ -267,7 +266,7 @@ class EditPage(Page):
 class AlarmPage(Page):
 
     def __init__(self):
-        self[1] = manager.resortAndSave
+        self[1] = manager.resort
 
     def execute(self, order):
         order = order.strip()
@@ -292,14 +291,14 @@ class AlarmPage(Page):
 
 def wake(data):
     manager.refreshWeekly()
-    saveAndReprint()
+    resort()
 eManager.addListener('alarm.start', lambda data:append(AlarmPage()))
 eManager.addListener('time_leap', wake)
-eManager.addListener('cross_day', saveAndReprint)
+eManager.addListener('cross_day', resort)
 eManager.addListener('sound.change', reprintTop)
 eManager.addListener('clock_sort', reprintTop)
 eManager.addListener('show_msg.change', reprintTop)
-eManager.addListener('clock_change', saveAndReprint)
+eManager.addListener('clock_change', resort)
 
 # 页面文字闪烁 ---------------- 通过清屏和重新输出
 
