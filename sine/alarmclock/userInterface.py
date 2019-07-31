@@ -289,7 +289,7 @@ class AlarmPage(Page):
 
 # 页面 -----------------
 
-def wake(data):
+def wake(*args):
     manager.refreshWeekly()
     resort()
 eManager.addListener('alarm.start', lambda data:append(AlarmPage()))
