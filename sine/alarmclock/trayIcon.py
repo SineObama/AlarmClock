@@ -141,7 +141,7 @@ def deleteIcon():
         try:
             win32gui.PostMessage(_data['instance'].hwnd, win32con.WM_CLOSE, 0, 0)
         except Exception as e:
-            if e[0] == 1400:
+            if not hasattr(e, '__getitem__') or e[0] == 1400:
                 # (1400, 'PostMessage', '\xce\xde\xd0\xa7\xb5\xc4\xb4\xb0\xbf\xda\xbe\xe4\xb1\xfa\xa1\xa3')
                 # 无效的窗口句柄。
                 # 这个情况一般是因为通过托盘图标退出，窗口就没有了，这时主程序再清理

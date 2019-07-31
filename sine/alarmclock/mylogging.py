@@ -34,4 +34,4 @@ def getLogger(*args, **kw):
 def setDebug(debug):
     logger.setLevel(logging.DEBUG if debug else logging.WARN)
 
-logger.debug('logging inited')
+logger.info('logging inited')
