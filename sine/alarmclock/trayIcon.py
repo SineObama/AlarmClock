@@ -156,7 +156,7 @@ def deleteIcon():
                 win32gui.UnregisterClass(_data['instance'].window_class_name, 0)
                 break
             except Exception as e:
-                if e[0] == 1412:
+                if not hasattr(e, '__getitem__') or e[0] == 1412:
                     # (1412, 'UnregisterClass', '\xc0\xe0\xc8\xd4\xd3\xd0\xb4\xf2\xbf\xaa\xb5\xc4\xb4\xb0\xbf\xda\xa1\xa3')
                     # 类仍有打开的窗口。
                     # 这个情况一般是因为消息传递和窗口关闭的异步延迟

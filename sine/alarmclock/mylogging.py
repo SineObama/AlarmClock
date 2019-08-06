@@ -17,12 +17,6 @@ rootPath = getParentPath(__name__)
 # 基础
 logger = logging.getLogger(rootPath)
 logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# debug
-handler = logging.FileHandler("log.txt")
-handler.setLevel(logging.DEBUG)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 def getRoot():
     '''应用内的根'''

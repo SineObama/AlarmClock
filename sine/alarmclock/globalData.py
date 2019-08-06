@@ -6,6 +6,7 @@
 
 import os.path as spath
 import shutil
+import logging
 from . import mylogging
 from sine.utils import EventManager
 from .__meta__ import VERSION as version
@@ -92,7 +93,9 @@ def _init():
     ('warn', '!!!', None),
     ('state.ON', 'ON', None),
     ('state.OFF', 'OFF', None),
-    ('datafile', 'clocks.txt', None),
+    ('datafile', 'clocks.csv', None),
+    ('logfile', 'clock.log', None),
+    ('log_format', '%(asctime)s - %(name)s - %(levelname)s - %(message)s', None),
     ('encoding', 'utf-8', None),
     ('debug', False, boolConverter),
     ('debug.no_clear_screen', False, boolConverter),
@@ -117,6 +120,12 @@ def _init():
     data['sound'] = config['sound']
     data['show_msg'] = config['show_msg']
     mylogging.setDebug(config['debug'])
+    logger = mylogging.getRoot()
+    formatter = logging.Formatter(config['log_format'])
+    handler = logging.FileHandler(config['logfile'])
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 
     # 读入日期和时间识别格式配置 --------------

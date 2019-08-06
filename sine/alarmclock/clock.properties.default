@@ -47,6 +47,10 @@ state.OFF=OFF
 datafile=clocks.csv
 encoding=utf-8
 
+# 日志
+logfile=clock.log
+log_format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+
 # 记录调试信息
 debug=0
 # 更新时清屏
