@@ -187,7 +187,7 @@ def getTodayClock():
     today_clocks = []
     today = datetime.datetime.date(getNow())
     for clock in clocks:
-        if datetime.datetime.date(clock['time']) == today:
+        if datetime.datetime.date(clock['time']) == today and clock['on']:
             today_clocks.append(clock)
     return today_clocks
 
