@@ -10,7 +10,6 @@
 import win32gui
 import win32con
 import sys
-import time
 from threading import Thread, Lock
 from .SysTrayIcon import SysTrayIcon
 from .TrayMsg import send
@@ -47,6 +46,7 @@ showWindow = True
 
 def _onQuit(*args):
     eManager.sendEvent('quit', {'from':'icon menu'})
+    _data['instance'].quit()
 
 def _switchQuiet(*args):
     data['sound'] = not data['sound']
@@ -107,10 +107,14 @@ def getTitle():
     u'声音: ' + (u'开' if data['sound'] else u'关') + '\n' + \
     u'消息提示: ' + (u'开' if data['show_msg'] else u'关')
 
-menu_options = [(u'延迟', None, _later)] # 静态菜单
+menu_options = [(u'延迟', None, _later), (u'退出', None, _onQuit)] # 静态菜单
 
-_data = {'instance':None, 'exist':False} # 全局数据
+_data = {'instance':None, 'exist':False, 'curId':0} # 全局数据
 _lock = Lock() # 对以上状态数据的锁
+
+def _onRestart():
+    '''目前处理资源管理器重启后的 icon 重建，此时仍可以对旧 icon 进行设置，但没有反应也没有报错，所以就直接销毁原 icon ，触发新建'''
+    _deleteIcon(True)
 
 def createIcon():
     _lock.acquire()
@@ -118,19 +122,33 @@ def createIcon():
         _lock.release()
         return
     def mainLoop():
-        try:
-            _data['instance'] = SysTrayIcon('clock.ico', getTitle(), tuple(menu_options), _onLeftClick, _addition_menu, on_quit=_onQuit)
-            _data['exist'] = True
-        finally:
-            created = _data['exist']
-            _lock.release()
-            if created:
-                _reset_icon()
-                win32gui.PumpMessages()
+        while True: # 图标失效时自动重启
+            if not _lock.locked():
+                _lock.acquire()
+            try:
+                _data['curId'] += 1 # 类名需要更新，以防重复冲突
+                _data['instance'] = SysTrayIcon('clock.ico', getTitle(), tuple(menu_options), _onLeftClick, _addition_menu, on_restart=_onRestart, window_class_name='AlarmClock_'+str(_data['curId']))
+                _data['exist'] = True
+            finally:
+                _lock.release()
+                if _data['exist']:
+                    _reset_icon()
+                    win32gui.PumpMessages() 
+                    # 上面阻塞，继续时表明图标失效或系统退出
+                    logger.info('tray icon stopped')
+                    _lock.acquire()
+                    if not _data['exist']: # 系统退出
+                        _lock.release()
+                        logger.info('tray icon thread exit')
+                        break
     trayThread = Thread(target=mainLoop)
+    trayThread.setDaemon(True)
     trayThread.start()
 
 def deleteIcon():
+    _deleteIcon(False)
+
+def _deleteIcon(setExistTo):
     '''退出时的清理: 删除图标（关闭窗口），并尝试注销窗口类。'''
     _lock.acquire()
     if not _data['exist']:
@@ -148,28 +166,12 @@ def deleteIcon():
                 pass
             else:
                 raise
-
-        # 注销窗口类
-        tryTimes = 5
-        for i in range(tryTimes):
-            try:
-                win32gui.UnregisterClass(_data['instance'].window_class_name, 0)
-                break
-            except Exception as e:
-                if not hasattr(e, '__getitem__') or e[0] == 1412:
-                    # (1412, 'UnregisterClass', '\xc0\xe0\xc8\xd4\xd3\xd0\xb4\xf2\xbf\xaa\xb5\xc4\xb4\xb0\xbf\xda\xa1\xa3')
-                    # 类仍有打开的窗口。
-                    # 这个情况一般是因为消息传递和窗口关闭的异步延迟
-                    pass
-                else:
-                    raise
-            time.sleep(0.1)
     except:
         logger.warn('exception in deleteIcon, ignored.', exc_info=1)
         pass
     finally:
         _data['instance'] = None
-        _data['exist'] = False
+        _data['exist'] = setExistTo
         _lock.release()
 
 def _refresh_icon(icon, hover_text):

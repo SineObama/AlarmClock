@@ -53,6 +53,7 @@ def _listen(stop_event):
         if startTime and (getNow() - startTime).seconds > alarmLast:
             startTime = None
             eManager.sendEvent('alarm.timeout')
+    logger.info('listenThread exit')
     return
 
 listenThread = ReStartableThread(target=_listen)

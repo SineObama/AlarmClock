@@ -12,6 +12,7 @@ For now, the demo at the bottom shows how to use it...'''
          
 import os
 import sys
+import time
 import win32api
 import win32con
 import win32gui_struct
@@ -26,7 +27,7 @@ logger = mylogging.getLogger(__name__)
 class SysTrayIcon(object):
     '''TODO'''
     QUIT = 'QUIT'
-    SPECIAL_ACTIONS = [QUIT]
+    SPECIAL_ACTIONS = []
     
     FIRST_ID = 1023
     
@@ -36,17 +37,16 @@ class SysTrayIcon(object):
                  static_options,
                  left_click_callback=None,
                  addition_menu_callback=None,
-                 on_quit=None,
+                 on_restart=None,
                  default_menu_index=None,
                  window_class_name=None,):
         
         self.icon = icon
         self.hover_text = hover_text
-        self.on_quit = on_quit
+        self.on_restart = on_restart
         self.LCC = left_click_callback
         self.AMC = addition_menu_callback
         
-        static_options = static_options + ((u'退出', None, self.QUIT),)
         self._next_action_id = self.FIRST_ID
         self.static_actions = dict()
         self.static_options = self._add_ids_to_menu_options(list(static_options), self.static_actions)
@@ -138,13 +138,39 @@ class SysTrayIcon(object):
         win32gui.Shell_NotifyIcon(message, self.notify_id)
 
     def restart(self, hwnd, msg, wparam, lparam):
-        self.refresh_icon()
+        '''目前已知资源管理器重启会触发 restart ，但是这时 refresh_icon 会报错，不能正常重启，故交给外层处理'''
+        logger.info('restart. ' +
+        ' hwnd=' + str(hwnd) +
+        ' msg=' + str(msg) +
+        ' wparam=' + str(wparam) +
+        ' lparam=' + str(lparam))
+        # self.refresh_icon()
+        self.on_restart()
 
     def destroy(self, hwnd, msg, wparam, lparam):
-        if self.on_quit: self.on_quit(self)
+        logger.info('on destroy')
         nid = (self.hwnd, 0)
-        win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
+        try:
+            win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
+        except Exception as e:
+            logger.info('exception while destroy icon. ignored.', exc_info=1)
         win32gui.PostQuitMessage(0) # Terminate the app.
+
+        # 注销窗口类
+        tryTimes = 5
+        for i in range(tryTimes):
+            try:
+                win32gui.UnregisterClass(self.window_class_name, 0)
+                break
+            except Exception as e:
+                if not hasattr(e, '__getitem__') or e[0] == 1412:
+                    # (1412, 'UnregisterClass', '\xc0\xe0\xc8\xd4\xd3\xd0\xb4\xf2\xbf\xaa\xb5\xc4\xb4\xb0\xbf\xda\xa1\xa3')
+                    # 类仍有打开的窗口。
+                    # 这个情况一般是因为消息传递和窗口关闭的异步延迟
+                    pass
+                else:
+                    logger.info('exception when UnregisterClass, ignored.', exc_info=1)
+            time.sleep(0.1)
 
     def notify(self, hwnd, msg, wparam, lparam):
         if lparam==win32con.WM_LBUTTONDBLCLK:
@@ -234,13 +260,14 @@ class SysTrayIcon(object):
     def command(self, hwnd, msg, wparam, lparam):
         id = win32gui.LOWORD(wparam)
         self.execute_menu_option(id)
+
+    def quit(self):
+        logger.info('quit is called')
+        win32gui.DestroyWindow(self.hwnd)
         
     def execute_menu_option(self, id):
-        menu_action = self.all_actions[id]      
-        if menu_action == self.QUIT:
-            win32gui.DestroyWindow(self.hwnd)
-        else:
-            menu_action(self)
+        menu_action = self.all_actions[id]
+        menu_action(self)
             
 def non_string_iterable(obj):
     try:
@@ -262,12 +289,15 @@ if __name__ == '__main__':
     def switch_icon(sysTrayIcon):
         sysTrayIcon.icon = icons.next()
         sysTrayIcon.refresh_icon()
+    def quit(sysTrayIcon):
+        print('Bye, then.')
+        sysTrayIcon.quit()
     menu_options = (('Say Hello', icons.next(), hello),
                     ('Switch Icon', None, switch_icon),
                     ('A sub-menu', icons.next(), (('Say Hello to Simon', icons.next(), simon),
                                                   ('Switch Icon', icons.next(), switch_icon),
-                                                 ))
+                                                 )),
+                    ('Quit', None, quit)
                    )
-    def bye(sysTrayIcon): print('Bye, then.')
     
-    SysTrayIcon(icons.next(), hover_text, menu_options, on_quit=bye, default_menu_index=1)
+    SysTrayIcon(icons.next(), hover_text, menu_options, default_menu_index=1)
